@@ -1,0 +1,80 @@
+# ======================
+# Node / NPM
+# ======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ======================
+# Environment Variables
+# ======================
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ======================
+# Build / Dist
+# ======================
+dist/
+build/
+out/
+.next/
+.vercel/
+.netlify/
+
+# ======================
+# Logs
+# ======================
+logs/
+*.log
+
+# ======================
+# OS Files
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# IDE / Editor
+# ======================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ======================
+# Cache
+# ======================
+.cache/
+.eslintcache
+.parcel-cache/
+
+# ======================
+# Testing
+# ======================
+coverage/
+*.lcov
+
+# ======================
+# Database
+# ======================
+*.sqlite
+*.db
+
+# ======================
+# Uploads (if dynamic)
+# ======================
+uploads/
+public/uploads/
+
+# ======================
+# Misc
+# ======================
+*.pem
+*.key
