@@ -1,13 +1,15 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 export default function Hero() {
   // Change this ID to any YouTube video you prefer (should be an HD video)
-  const YOUTUBE_VIDEO_ID = "ysz5S6PUM-U"
+  const YOUTUBE_VIDEO_ID = "E_Iy34hFITE"
   const containerRef = useRef<HTMLDivElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
+  const [localVideoAvailable, setLocalVideoAvailable] = useState<boolean | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false)
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -29,42 +31,115 @@ export default function Hero() {
     return () => window.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
-  // Try to programmatically play the video (some browsers require a play() call even when muted)
+  // Check if local MP4 exists; prefer it for background when available.
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const res = await fetch('/videos/hero.mp4', { method: 'HEAD' })
+        if (mounted) setLocalVideoAvailable(res.ok)
+      } catch {
+        try {
+          const res2 = await fetch('/videos/hero.mp4')
+          if (mounted) setLocalVideoAvailable(res2.ok)
+        } catch {
+          if (mounted) setLocalVideoAvailable(false)
+        }
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  // Try to programmatically play the local video (some browsers require a play() call even when muted)
+  useEffect(() => {
+    if (localVideoAvailable && videoRef.current) {
+      const v = videoRef.current
+      const p = v.play()
+      if (p && typeof p.then === 'function') p.catch(() => {})
+    }
+  }, [localVideoAvailable])
+
+  // Track play/pause state for a manual play button
   useEffect(() => {
     const v = videoRef.current
-    if (v) {
-      const p = v.play()
-      if (p && typeof p.then === "function") {
-        p.catch(() => {
-          // ignore play errors (autoplay policies). The user can still interact to start playback.
-        })
-      }
+    if (!v) return
+    const onPlay = () => setIsVideoPlaying(true)
+    const onPause = () => setIsVideoPlaying(false)
+    v.addEventListener('play', onPlay)
+    v.addEventListener('pause', onPause)
+    // initialize
+    setIsVideoPlaying(!v.paused)
+    return () => {
+      v.removeEventListener('play', onPlay)
+      v.removeEventListener('pause', onPause)
     }
-  }, [])
+  }, [localVideoAvailable])
 
   return (
     <section
       ref={containerRef}
       className="relative w-full min-h-screen bg-background overflow-hidden pt-20 flex items-center justify-center"
     >
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {/* Local MP4 background — primary for reliability. */}
-        <video
-          ref={videoRef}
-          className="absolute top-1/2 left-1/2 w-[177.77vh] h-[100vh] min-w-full min-h-full object-cover transform -translate-x-1/2 -translate-y-1/2 z-0"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          aria-hidden
-        >
-          <source src="/videos/hero.mp4" type="video/mp4" />
-        </video>
-
-        {/* Subtle dark overlay for better contrast with text */}
-        <div className="absolute inset-0 bg-black/20 z-5" />
+      {/* Background: prefer local MP4 if available, otherwise use YouTube iframe */}
+      <div className="absolute inset-0 overflow-hidden">
+        {localVideoAvailable === null ? (
+          <div className="absolute inset-0 bg-black/40 -z-10" />
+        ) : localVideoAvailable ? (
+          <>
+            <video
+              ref={videoRef}
+              className="absolute top-1/2 left-1/2 w-[177.77vh] h-[100vh] min-w-full min-h-full object-cover transform -translate-x-1/2 -translate-y-1/2"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-hidden
+            >
+              <source src="/videos/hero.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-black/30" />
+          </>
+        ) : (
+          <>
+            <iframe
+              className="absolute top-1/2 left-1/2 w-[177.77vh] h-[100vh] min-w-full min-h-full transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ opacity: 0.95 }}
+              src={`https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1&mute=1&controls=0&loop=1&playlist=${YOUTUBE_VIDEO_ID}&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1`}
+              title="Hero background video"
+              frameBorder="0"
+              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+            />
+            <div className="absolute inset-0 bg-black/40" />
+          </>
+        )}
       </div>
+      {/* Manual play button for local background (if autoplay blocked) */}
+      {localVideoAvailable && (
+        <button
+          onClick={() => {
+            const v = videoRef.current
+            if (!v) return
+            if (v.paused) v.play().catch(() => {})
+            else v.pause()
+          }}
+          className="fixed bottom-6 left-6 z-30 w-12 h-12 rounded-full bg-primary/90 text-background flex items-center justify-center"
+          aria-label="Toggle background video"
+          title="Toggle background video"
+        >
+          {isVideoPlaying ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-pause">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-play">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          )}
+        </button>
+      )}
       {/* Background animated elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" data-float />
