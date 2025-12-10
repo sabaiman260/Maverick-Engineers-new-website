@@ -3,8 +3,11 @@
 import { useEffect, useRef } from "react"
 
 export default function Hero() {
+  // Change this ID to any YouTube video you prefer (should be an HD video)
+  const YOUTUBE_VIDEO_ID = "ysz5S6PUM-U"
   const containerRef = useRef<HTMLDivElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -26,11 +29,42 @@ export default function Hero() {
     return () => window.removeEventListener("mousemove", handleMouseMove)
   }, [])
 
+  // Try to programmatically play the video (some browsers require a play() call even when muted)
+  useEffect(() => {
+    const v = videoRef.current
+    if (v) {
+      const p = v.play()
+      if (p && typeof p.then === "function") {
+        p.catch(() => {
+          // ignore play errors (autoplay policies). The user can still interact to start playback.
+        })
+      }
+    }
+  }, [])
+
   return (
     <section
       ref={containerRef}
       className="relative w-full min-h-screen bg-background overflow-hidden pt-20 flex items-center justify-center"
     >
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Local MP4 background — primary for reliability. */}
+        <video
+          ref={videoRef}
+          className="absolute top-1/2 left-1/2 w-[177.77vh] h-[100vh] min-w-full min-h-full object-cover transform -translate-x-1/2 -translate-y-1/2 z-0"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          aria-hidden
+        >
+          <source src="/videos/hero.mp4" type="video/mp4" />
+        </video>
+
+        {/* Subtle dark overlay for better contrast with text */}
+        <div className="absolute inset-0 bg-black/20 z-5" />
+      </div>
       {/* Background animated elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" data-float />
@@ -38,7 +72,7 @@ export default function Hero() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Tagline */}
         <div className="inline-block mb-6 animate-fadeInDown">
           <span className="px-4 py-2 rounded-full bg-primary/10 border border-primary/30 text-primary text-sm font-semibold">
